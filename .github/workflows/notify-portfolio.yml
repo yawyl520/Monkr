@@ -23,6 +23,7 @@ on:
 
 jobs:
   dispatch:
+    if: github.repository == 'blaineam/Monkr'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger mirror-app-docs in the portfolio

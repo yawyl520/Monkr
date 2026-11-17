@@ -1,4 +1,4 @@
-name: Deploy monkr.wemiller.com (redirect + media) to GitHub Pages
+name: Deploy Monkr to GitHub Pages
 
 on:
   push:
@@ -17,21 +17,28 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
       - run: npm ci
-      - run: npm run build
-      # The app lives at wemiller.com/tools/monkr/app/ now (built by the portfolio's
-      # mirror-app-docs workflow with scripts/build-portfolio.sh). monkr.wemiller.com keeps
-      # publishing the full build for its device frames and backgrounds, which the app
-      # loads from here cross-origin, but every page becomes a redirect to the new
-      # address, plus migrate.html, which hands saved projects over (legacy/).
-      - name: Turn the pages into the redirect to wemiller.com
-        run: node scripts/legacy-site.mjs build
+      - run: npm run check
+      - name: Build app and media for this Pages site
+        run: npm run build
+        env:
+          MONKR_BASE: ${{ steps.pages.outputs.base_path }}
+          VITE_MONKR_MEDIA_ORIGIN: ''
+          VITE_MONKR_LEGACY_ORIGIN: ''
+      - name: Remove upstream custom domain
+        run: rm -f build/CNAME
       - uses: actions/upload-pages-artifact@v3
         with:
           path: build
